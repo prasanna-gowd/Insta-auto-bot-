@@ -51,6 +51,22 @@ def login(username: str, password: str) -> bool:
     """
     global _is_logged_in, cl
 
+    # Check if SESSION_DATA env var is provided and SESSION_FILE doesn't exist yet
+    from config import SESSION_DATA
+    if SESSION_DATA and not os.path.exists(SESSION_FILE):
+        try:
+            import base64
+            logger.info("Restoring session from SESSION_DATA env var...")
+            try:
+                decoded = base64.b64decode(SESSION_DATA.strip()).decode('utf-8')
+            except Exception:
+                decoded = SESSION_DATA.strip()
+            with open(SESSION_FILE, 'w', encoding='utf-8') as f:
+                f.write(decoded)
+            logger.info("Saved SESSION_DATA to %s", SESSION_FILE)
+        except Exception as exc:
+            logger.warning("Failed to restore SESSION_DATA env var: %s", exc)
+
     # ---- try existing session first ----------------------------------------
     if os.path.exists(SESSION_FILE):
         try:

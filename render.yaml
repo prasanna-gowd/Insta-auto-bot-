@@ -16,3 +16,5 @@ services:
         generateValue: true
       - key: SESSION_FILE
         value: "session.json"
+      - key: SESSION_DATA
+        sync: false
