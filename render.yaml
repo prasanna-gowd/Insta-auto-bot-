@@ -2,8 +2,9 @@ services:
   - type: web
     name: insta-reply-bot
     runtime: python
+    plan: free
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "cd backend && python main.py"
+    startCommand: "python backend/main.py"
     envVars:
       - key: INSTAGRAM_USERNAME
         sync: false
@@ -15,7 +16,3 @@ services:
         generateValue: true
       - key: SESSION_FILE
         value: "session.json"
-    disk:
-      name: bot-data
-      mountPath: /opt/render/project/src/backend
-      sizeGB: 1
