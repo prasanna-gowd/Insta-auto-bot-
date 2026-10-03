@@ -16,10 +16,6 @@ env/
 # Environment
 .env
 
-# Instagram Session (NEVER commit this!)
-session.json
-*.json
-
 # Database
 *.db
 *.sqlite
