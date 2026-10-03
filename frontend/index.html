@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InstaBot – Dashboard</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <span class="brand-icon">📱</span>
+      <span class="brand-name">InstaBot</span>
+    </div>
+    <div class="navbar-links">
+      <a href="/" class="nav-link active">🏠 Dashboard</a>
+      <a href="/logs-page" class="nav-link">📋 Logs</a>
+      <a href="/settings" class="nav-link">⚙️ Settings</a>
+    </div>
+    <div class="navbar-right">
+      <div class="bot-status-badge" id="botStatusBadge">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Checking...</span>
+      </div>
+      <div class="user-badge">
+        <span class="user-icon">👤</span>
+        <span id="usernameDisplay">Not logged in</span>
+      </div>
+    </div>
+    <button class="hamburger" id="hamburger" aria-label="Toggle menu">☰</button>
+  </nav>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-subtitle">Manage auto-replies for your Instagram reels</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" id="fetchReelsBtn" onclick="Reels.load()">
+          🔄 Fetch Reels
+        </button>
+        <button class="btn btn-success" id="botToggleBtn" onclick="Bot.toggle()">
+          ▶️ Start Bot
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card">
+        <div class="stat-icon">💬</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statTotal">—</div>
+          <div class="stat-label">Total Interactions</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📝</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statComments">—</div>
+          <div class="stat-label">Comment Replies Sent</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📩</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statDMs">—</div>
+          <div class="stat-label">DMs Sent</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🎬</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statEnabledReels">—</div>
+          <div class="stat-label">Active Reels</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reels Grid -->
+    <div class="section-header">
+      <h2 class="section-title">Your Reels</h2>
+      <span class="section-count" id="reelCount"></span>
+    </div>
+
+    <div id="reelsContainer">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">🎬</div>
+        <h3>No reels loaded yet</h3>
+        <p>Click "Fetch Reels" to load your Instagram reels</p>
+        <button class="btn btn-primary" onclick="Reels.load()">🔄 Fetch Reels</button>
+      </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-overlay" id="loadingOverlay" style="display:none;">
+      <div class="spinner"></div>
+      <p class="loading-text" id="loadingText">Loading reels...</p>
+    </div>
+
+  </main>
+
+  <!-- ===== EDIT MODAL ===== -->
+  <div class="modal-overlay" id="modalOverlay" onclick="Reels.closeModal(event)">
+    <div class="modal" id="editModal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">⚙️ Configure Auto-Reply</h3>
+        <button class="modal-close" onclick="Reels.closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="reel-preview" id="modalReelPreview"></div>
+
+        <input type="hidden" id="modalReelId" />
+
+        <div class="form-group">
+          <label class="form-label">💬 Comment Reply Message</label>
+          <textarea
+            id="commentReplyInput"
+            class="form-textarea"
+            placeholder="Enter the public reply to post under each comment on this reel..."
+            rows="4"
+          ></textarea>
+          <span class="form-hint">This will appear as a public reply under each new comment.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">📩 DM Message</label>
+          <textarea
+            id="dmMessageInput"
+            class="form-textarea"
+            placeholder="Enter the direct message to send to each commenter (e.g. a link or offer)..."
+            rows="4"
+          ></textarea>
+          <span class="form-hint">This will be sent as a private DM to each commenter.</span>
+        </div>
+
+        <div class="form-group toggle-row">
+          <div>
+            <label class="form-label">🤖 Enable Auto-Reply</label>
+            <span class="form-hint">Bot will start replying to comments on this reel</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="enabledToggle" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="Reels.closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="saveConfigBtn" onclick="Reels.saveConfig()">
+          💾 Save Configuration
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TOAST ===== -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Check login
+      const authStatus = await Auth.check();
+      if (!authStatus.logged_in) {
+        window.location.href = '/settings';
+        return;
+      }
+      document.getElementById('usernameDisplay').textContent = '@' + (authStatus.username || 'unknown');
+
+      // Load everything
+      await Promise.all([Stats.load(), Bot.getStatus(), Reels.load()]);
+
+      // Hamburger menu
+      const ham = document.getElementById('hamburger');
+      if (ham) {
+        ham.addEventListener('click', () => {
+          document.querySelector('.navbar-links').classList.toggle('open');
+        });
+      }
+    });
+  </script>
+</body>
+</html>

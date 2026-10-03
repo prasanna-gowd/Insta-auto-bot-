@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InstaBot – Settings</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <span class="brand-icon">📱</span>
+      <span class="brand-name">InstaBot</span>
+    </div>
+    <div class="navbar-links">
+      <a href="/" class="nav-link">🏠 Dashboard</a>
+      <a href="/logs-page" class="nav-link">📋 Logs</a>
+      <a href="/settings" class="nav-link active">⚙️ Settings</a>
+    </div>
+    <div class="navbar-right">
+      <div class="bot-status-badge" id="botStatusBadge">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Checking...</span>
+      </div>
+      <div class="user-badge">
+        <span class="user-icon">👤</span>
+        <span id="usernameDisplay">Not logged in</span>
+      </div>
+    </div>
+    <button class="hamburger" id="hamburger" aria-label="Toggle menu">☰</button>
+  </nav>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content">
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Settings</h1>
+        <p class="page-subtitle">Manage your Instagram account connection and bot configuration</p>
+      </div>
+    </div>
+
+    <!-- ===== ACCOUNT SECTION ===== -->
+    <div class="settings-card" id="loginSection">
+      <div class="settings-card-header">
+        <h2 class="settings-card-title">📸 Instagram Account</h2>
+        <div class="connection-indicator" id="connectionIndicator">
+          <span class="status-dot" id="connDot"></span>
+          <span id="connStatus">Checking...</span>
+        </div>
+      </div>
+
+      <!-- Logged OUT view -->
+      <div id="loginForm">
+        <p class="settings-desc">Connect your Instagram account to start the auto-reply bot.</p>
+        <div class="form-group">
+          <label class="form-label">Instagram Username</label>
+          <input
+            type="text"
+            id="igUsername"
+            class="form-input"
+            placeholder="your_username"
+            autocomplete="username"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="password-wrapper">
+            <input
+              type="password"
+              id="igPassword"
+              class="form-input"
+              placeholder="••••••••"
+              autocomplete="current-password"
+            />
+            <button class="password-toggle" onclick="Settings.togglePassword()" type="button">👁️</button>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" id="loginBtn" onclick="Settings.login()">
+            🔐 Connect Account
+          </button>
+        </div>
+        <p class="settings-note">
+          ⚠️ Your credentials are stored only on your server as a session file and are never shared.
+        </p>
+      </div>
+
+      <!-- Logged IN view -->
+      <div id="loggedInView" style="display:none;">
+        <div class="account-card">
+          <div class="account-avatar">
+            <span id="avatarInitial">?</span>
+          </div>
+          <div class="account-info">
+            <div class="account-username" id="loggedInUsername">—</div>
+            <div class="account-status">✅ Connected</div>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="Settings.logout()">🔌 Disconnect</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== BOT SETTINGS SECTION ===== -->
+    <div class="settings-card">
+      <div class="settings-card-header">
+        <h2 class="settings-card-title">🤖 Bot Configuration</h2>
+      </div>
+      <div class="settings-info-grid">
+        <div class="settings-info-item">
+          <span class="settings-info-label">Poll Interval</span>
+          <span class="settings-info-value">45 seconds</span>
+          <span class="settings-info-hint">How often the bot checks for new comments</span>
+        </div>
+        <div class="settings-info-item">
+          <span class="settings-info-label">Comment Delay</span>
+          <span class="settings-info-value">2–5 seconds</span>
+          <span class="settings-info-hint">Random delay before posting each reply</span>
+        </div>
+        <div class="settings-info-item">
+          <span class="settings-info-label">DM Delay</span>
+          <span class="settings-info-value">3–7 seconds</span>
+          <span class="settings-info-hint">Random delay before sending each DM</span>
+        </div>
+        <div class="settings-info-item">
+          <span class="settings-info-label">Bot Status</span>
+          <span class="settings-info-value" id="botStatusValue">—</span>
+          <span class="settings-info-hint">Current running state</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== DANGER ZONE ===== -->
+    <div class="settings-card danger-zone">
+      <div class="settings-card-header">
+        <h2 class="settings-card-title">🔴 Danger Zone</h2>
+      </div>
+      <p class="settings-desc">These actions are irreversible. Proceed with caution.</p>
+      <div class="danger-actions">
+        <div class="danger-item">
+          <div>
+            <strong>Clear All Logs</strong>
+            <p>Delete all reply log history from the database.</p>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="Settings.clearLogs()">Clear Logs</button>
+        </div>
+        <div class="danger-item">
+          <div>
+            <strong>Stop Bot</strong>
+            <p>Immediately stop the auto-reply bot if it is running.</p>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="Settings.stopBot()">Stop Bot</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ===== TOAST ===== -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Load auth status
+      const authStatus = await Auth.check();
+      Settings.updateAccountUI(authStatus);
+
+      // Bot status
+      const botSt = await Bot.getStatus();
+      document.getElementById('botStatusValue').textContent = botSt.running ? '🟢 Running' : '🔴 Stopped';
+
+      // Hamburger
+      const ham = document.getElementById('hamburger');
+      if (ham) {
+        ham.addEventListener('click', () => {
+          document.querySelector('.navbar-links').classList.toggle('open');
+        });
+      }
+
+      // Enter key on password
+      const pwd = document.getElementById('igPassword');
+      if (pwd) {
+        pwd.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') Settings.login();
+        });
+      }
+    });
+
+    Settings.updateAccountUI = function(authStatus) {
+      const dot = document.getElementById('connDot');
+      const connStatus = document.getElementById('connStatus');
+      const loginForm = document.getElementById('loginForm');
+      const loggedInView = document.getElementById('loggedInView');
+      const usernameDisplay = document.getElementById('usernameDisplay');
+
+      if (authStatus && authStatus.logged_in) {
+        if (dot) dot.classList.add('dot-green');
+        if (connStatus) connStatus.textContent = 'Connected';
+        if (loginForm) loginForm.style.display = 'none';
+        if (loggedInView) loggedInView.style.display = 'block';
+        const uname = authStatus.username || 'unknown';
+        const uEl = document.getElementById('loggedInUsername');
+        if (uEl) uEl.textContent = '@' + uname;
+        const aEl = document.getElementById('avatarInitial');
+        if (aEl) aEl.textContent = uname[0].toUpperCase();
+        if (usernameDisplay) usernameDisplay.textContent = '@' + uname;
+      } else {
+        if (dot) dot.classList.remove('dot-green');
+        if (connStatus) connStatus.textContent = 'Not connected';
+        if (loginForm) loginForm.style.display = 'block';
+        if (loggedInView) loggedInView.style.display = 'none';
+        if (usernameDisplay) usernameDisplay.textContent = 'Not logged in';
+      }
+    };
+
+    Settings.togglePassword = function() {
+      const input = document.getElementById('igPassword');
+      if (input) input.type = input.type === 'password' ? 'text' : 'password';
+    };
+
+    Settings.clearLogs = async function() {
+      if (!confirm('Delete all reply logs? This cannot be undone.')) return;
+      try {
+        await API.del('/api/logs');
+        Toast.success('All logs cleared.');
+      } catch(e) {
+        Toast.error('Failed to clear logs: ' + e.message);
+      }
+    };
+
+    Settings.stopBot = async function() {
+      try {
+        await API.post('/api/bot/stop');
+        Toast.success('Bot stopped.');
+        const stVal = document.getElementById('botStatusValue');
+        if (stVal) stVal.textContent = '🔴 Stopped';
+        Bot.getStatus();
+      } catch(e) {
+        Toast.error('Failed to stop bot.');
+      }
+    };
+  </script>
+</body>
+</html>

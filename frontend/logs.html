@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InstaBot – Logs</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <span class="brand-icon">📱</span>
+      <span class="brand-name">InstaBot</span>
+    </div>
+    <div class="navbar-links">
+      <a href="/" class="nav-link">🏠 Dashboard</a>
+      <a href="/logs-page" class="nav-link active">📋 Logs</a>
+      <a href="/settings" class="nav-link">⚙️ Settings</a>
+    </div>
+    <div class="navbar-right">
+      <div class="bot-status-badge" id="botStatusBadge">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Checking...</span>
+      </div>
+      <div class="user-badge">
+        <span class="user-icon">👤</span>
+        <span id="usernameDisplay">Not logged in</span>
+      </div>
+    </div>
+    <button class="hamburger" id="hamburger" aria-label="Toggle menu">☰</button>
+  </nav>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content">
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Reply Logs</h1>
+        <p class="page-subtitle">History of all auto-replies and DMs sent by the bot</p>
+      </div>
+      <div class="header-actions">
+        <label class="auto-refresh-label">
+          <input type="checkbox" id="autoRefreshCheck" onchange="Logs.toggleAutoRefresh(this.checked)" />
+          🔁 Auto-refresh (30s)
+        </label>
+        <button class="btn btn-danger" onclick="Logs.confirmClear()">🗑️ Clear All Logs</button>
+      </div>
+    </div>
+
+    <!-- Log Stats Bar -->
+    <div class="log-stats-bar">
+      <span>Total entries: <strong id="totalLogsCount">—</strong></span>
+      <span id="lastRefreshed"></span>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrapper">
+      <table class="logs-table" id="logsTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Reel</th>
+            <th>Commenter</th>
+            <th>Comment Text</th>
+            <th>Comment Reply</th>
+            <th>DM Sent</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody id="logsTableBody">
+          <tr>
+            <td colspan="7" class="empty-row">Loading logs...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" id="paginationContainer"></div>
+
+  </main>
+
+  <!-- ===== TOAST ===== -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Confirm Dialog -->
+  <div class="modal-overlay" id="confirmOverlay" style="display:none;" onclick="Logs.cancelClear(event)">
+    <div class="modal confirm-modal">
+      <div class="modal-header">
+        <h3 class="modal-title">⚠️ Clear All Logs</h3>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete all reply logs? This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="Logs.cancelClear()">Cancel</button>
+        <button class="btn btn-danger" onclick="Logs.clear()">Yes, Clear All</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    let _autoRefreshTimer = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const authStatus = await Auth.check();
+      if (!authStatus.logged_in) {
+        window.location.href = '/settings';
+        return;
+      }
+      document.getElementById('usernameDisplay').textContent = '@' + (authStatus.username || 'unknown');
+
+      // Load bot status
+      await Bot.getStatus();
+
+      // Load logs page 1
+      await Logs.load(1);
+
+      // Hamburger
+      const ham = document.getElementById('hamburger');
+      if (ham) {
+        ham.addEventListener('click', () => {
+          document.querySelector('.navbar-links').classList.toggle('open');
+        });
+      }
+    });
+
+    // Extend Logs with auto-refresh toggle
+    Logs.toggleAutoRefresh = function(enabled) {
+      if (_autoRefreshTimer) clearInterval(_autoRefreshTimer);
+      if (enabled) {
+        _autoRefreshTimer = setInterval(() => Logs.load(Logs._currentPage || 1), 30000);
+        Toast.info('Auto-refresh enabled (every 30s)');
+      }
+    };
+
+    Logs.confirmClear = function() {
+      document.getElementById('confirmOverlay').style.display = 'flex';
+    };
+    Logs.cancelClear = function(e) {
+      if (!e || e.target === document.getElementById('confirmOverlay')) {
+        document.getElementById('confirmOverlay').style.display = 'none';
+      }
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: insta-reply-bot
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "cd backend && python main.py"
+    envVars:
+      - key: INSTAGRAM_USERNAME
+        sync: false
+      - key: INSTAGRAM_PASSWORD
+        sync: false
+      - key: POLL_INTERVAL
+        value: "45"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SESSION_FILE
+        value: "session.json"
+    disk:
+      name: bot-data
+      mountPath: /opt/render/project/src/backend
+      sizeGB: 1
