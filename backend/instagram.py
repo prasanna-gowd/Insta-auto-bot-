@@ -72,16 +72,14 @@ def login(username: str, password: str) -> bool:
         try:
             logger.info("Attempting to restore session from %s", SESSION_FILE)
             cl.load_settings(SESSION_FILE)
-            cl.login(username, password)
-            cl.get_timeline_feed()          # cheap call to verify the session
+            cl.get_timeline_feed()          # lightweight call to verify session (NO password login request needed!)
             _is_logged_in = True
-            logger.info("Session restored successfully for user: %s", username)
+            logger.info("Session restored successfully from session file!")
             return True
         except Exception as exc:
             logger.warning(
                 "Stored session is invalid (%s). Falling back to fresh login.", exc
             )
-            # Reset the client so stale cookies do not interfere
             cl = Client()
 
     # ---- fresh login -------------------------------------------------------
