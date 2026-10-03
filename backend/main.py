@@ -44,6 +44,17 @@ async def lifespan(app: FastAPI):
     # Startup
     database.init_db()
     logger.info("Database initialised.")
+    
+    # Auto-login if credentials are present in env
+    from config import INSTAGRAM_USERNAME, INSTAGRAM_PASSWORD
+    if INSTAGRAM_USERNAME and INSTAGRAM_PASSWORD:
+        try:
+            logger.info("Attempting auto-login on startup for: %s", INSTAGRAM_USERNAME)
+            instagram.login(INSTAGRAM_USERNAME, INSTAGRAM_PASSWORD)
+            logger.info("Auto-login successful on startup!")
+        except Exception as exc:
+            logger.warning("Auto-login on startup failed: %s", exc)
+
     yield
     # Shutdown
     bot.stop_bot()

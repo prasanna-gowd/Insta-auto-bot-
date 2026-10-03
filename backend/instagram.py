@@ -79,6 +79,9 @@ def login(username: str, password: str) -> bool:
     except Exception as exc:
         _is_logged_in = False
         logger.exception("Login failed for user %s: %s", username, exc)
+        err_str = str(exc)
+        if "429" in err_str:
+            raise RuntimeError("Instagram Rate Limit (Error 429): Too many login attempts. Please wait 10-15 minutes for Instagram cooldown.") from exc
         raise
 
 
