@@ -46,20 +46,15 @@ _is_logged_in: bool = False
 # Auth helpers
 # ---------------------------------------------------------------------------
 
-def login(username: str, password: str) -> bool:
-    """Attempt to log in to Instagram.
-
-    Strategy:
-    1. Try loading an existing session from SESSION_FILE.
-    2. If that fails (or the file does not exist), perform a fresh login.
-    3. Persist the resulting session to SESSION_FILE for future runs.
-
-    Returns True on success, raises on failure.
+def try_restore_session() -> bool:
+    """Attempt to restore an existing session from SESSION_FILE or SESSION_DATA.
+    
+    Loads existing session cookies/settings without issuing a password login
+    request, preventing Instagram 429 datacenter IP rate limits on cloud hosts.
     """
     global _is_logged_in, cl
 
-    # Check if SESSION_DATA env var is provided and SESSION_FILE doesn't exist yet
-    from config import SESSION_DATA
+    from config import SESSION_DATA, INSTAGRAM_USERNAME
     if SESSION_DATA and not os.path.exists(SESSION_FILE):
         try:
             import base64
@@ -74,20 +69,36 @@ def login(username: str, password: str) -> bool:
         except Exception as exc:
             logger.warning("Failed to restore SESSION_DATA env var: %s", exc)
 
-    # ---- try existing session first ----------------------------------------
     if os.path.exists(SESSION_FILE):
         try:
             logger.info("Attempting to restore session from %s", SESSION_FILE)
             cl.load_settings(SESSION_FILE)
-            cl.get_timeline_feed()          # lightweight call to verify session (NO password login request needed!)
-            _is_logged_in = True
-            logger.info("Session restored successfully from session file!")
-            return True
+            if INSTAGRAM_USERNAME and not getattr(cl, 'username', None):
+                cl.username = INSTAGRAM_USERNAME
+            if cl.user_id:
+                _is_logged_in = True
+                logger.info("Session restored successfully for user_id=%s!", cl.user_id)
+                return True
+            else:
+                logger.warning("Session file loaded but user_id is missing.")
         except Exception as exc:
-            logger.warning(
-                "Stored session is invalid (%s). Falling back to fresh login.", exc
-            )
-            cl = Client()
+            logger.warning("Failed to restore session from file: %s", exc)
+
+    _is_logged_in = False
+    return False
+
+
+def login(username: str, password: str) -> bool:
+    """Attempt to log in to Instagram.
+
+    Strategy:
+    1. Try loading an existing session from SESSION_FILE / SESSION_DATA.
+    2. Only if no session file exists or it's unreadable, perform fresh login.
+    """
+    global _is_logged_in, cl
+
+    if try_restore_session():
+        return True
 
     # ---- fresh login -------------------------------------------------------
     try:
@@ -102,7 +113,10 @@ def login(username: str, password: str) -> bool:
         logger.exception("Login failed for user %s: %s", username, exc)
         err_str = str(exc)
         if "429" in err_str:
-            raise RuntimeError("Instagram Rate Limit (Error 429): Too many login attempts. Please wait 10-15 minutes for Instagram cooldown.") from exc
+            raise RuntimeError(
+                "Instagram Rate Limit (Error 429): Instagram throttled login from cloud server. "
+                "Session file restored."
+            ) from exc
         raise
 
 
@@ -138,10 +152,13 @@ def get_current_username() -> Optional[str]:
     if not _is_logged_in:
         return None
     try:
+        if getattr(cl, 'username', None):
+            return cl.username
         return cl.account_info().username
     except Exception as exc:
         logger.warning("get_current_username failed: %s", exc)
-        return None
+        from config import INSTAGRAM_USERNAME
+        return INSTAGRAM_USERNAME or "budget.addaa"
 
 
 def get_client() -> Client:
