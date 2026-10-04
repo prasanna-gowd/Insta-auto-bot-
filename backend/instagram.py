@@ -23,7 +23,7 @@ from instagrapi.exceptions import (
     UserNotFound,
 )
 
-from config import SESSION_FILE
+from config import SESSION_FILE, PROXY_URL
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +32,13 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 cl = Client()
+if PROXY_URL:
+    try:
+        cl.set_proxy(PROXY_URL)
+        logger.info("Configured proxy: %s", PROXY_URL)
+    except Exception as exc:
+        logger.warning("Failed to set proxy %s: %s", PROXY_URL, exc)
+
 _is_logged_in: bool = False
 
 
